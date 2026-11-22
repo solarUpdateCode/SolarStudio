@@ -65,10 +65,6 @@ target_sources(SolarStudio
         Source/UI/MainComponent.h
 )
 
-if(WIN32)
-    target_sources(SolarStudio PRIVATE Assets/SolarStudio.rc)
-endif()
-
 target_include_directories(SolarStudio
     PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/Source"
