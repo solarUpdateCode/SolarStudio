@@ -1,0 +1,7 @@
+numpy>=1.24.0
+# Optional neural accelerators (server works out-of-the-box with numpy alone):
+# demucs>=4.0.1
+# openai-whisper>=20231117
+# librosa>=0.10.1
+# openai>=1.0.0
+# anthropic>=0.30.0

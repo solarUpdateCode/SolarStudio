@@ -1,0 +1,2 @@
+// Windows Resource Script - embeds SolarStudio.ico into the executable
+IDI_ICON1 ICON DISCARDABLE "SolarStudio.ico"
