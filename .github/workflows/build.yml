@@ -1,0 +1,80 @@
+name: Build SolarStudio DAW & Installers
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake (Windows x64)
+        run: cmake -B build -G "Visual Studio 17 2022" -A x64
+
+      - name: Build SolarStudio & SolarStudio Bridge
+        run: cmake --build build --config Release --parallel
+
+      - name: Build Windows Installer (Inno Setup)
+        shell: pwsh
+        run: |
+          $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y
+          }
+          & $iscc installer\windows\solarstudio_setup.iss
+
+      - name: Upload Windows Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SolarStudio-Windows-x64
+          path: dist/SolarStudio-Setup-*.exe
+
+  build-macos:
+    runs-on: macos-14
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure CMake (macOS Universal)
+        run: cmake -B build -G Xcode -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0
+
+      - name: Build SolarStudio & SolarStudio Bridge
+        run: cmake --build build --config Release --parallel
+
+      - name: Build macOS Universal PKG & DMG
+        run: |
+          chmod +x installer/macos/build_pkg.sh
+          ./installer/macos/build_pkg.sh
+
+      - name: Upload macOS Installer Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SolarStudio-macOS-Universal
+          path: |
+            dist/SolarStudio-*-macOS-Installer.pkg
+            dist/SolarStudio-*-macOS-Universal.dmg
+
+  publish-release:
+    needs: [ build-windows, build-macos ]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-files
+          merge-multiple: true
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-files/*
+          generate_release_notes: true
